@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        #events {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Administrator Interface</h1>
+    </header>
+    <main>
+        <section id="event-list">
+            <h2>Event List</h2>
+            <ul id="events">
+                <!-- Event items will be dynamically populated here -->
+            </ul>
+            <hr>
+            <h2>Add New Event</h2>
+            <form id="add-event-form">
+                <label for="event-name">Event Name:</label>
+                <input type="text" id="event-name" name="event-name" required>
+                <label for="event-date">Event Date:</label>
+                <input type="date" id="event-date" name="event-date" required>
+                <label for="vip-price">VIP Ticket Price:</label>
+                <input type="number" id="vip-price" name="vip-price" min="0" required>
+                <label for="regular-price">Regular Ticket Price:</label>
+                <input type="number" id="regular-price" name="regular-price" min="0" required>
+                <label for="max-attendees">Max Attendees:</label>
+                <input type="number" id="max-attendees" name="max-attendees" min="1" required>
+                <button type="submit">Add Event</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Ticket Booking System</p>
+    </footer>
+    <script>
+        async function fetchEvents() {
+            const response = await fetch('http://localhost:3000/events');
+            return await response.json();
+        }
+
+        async function renderEvents() {
+            const events = await fetchEvents();
+            const eventsList = document.getElementById('events');
+            eventsList.innerHTML = '';
+            events.forEach(event => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${event.name} - ${event.date}</span>
+                    <button class="edit-btn" data-id="${event._id}">Edit</button>
+                    <button class="delete-btn" data-id="${event._id}">Delete</button>
+                `;
+                eventsList.appendChild(li);
+            });
+        }
+
+        document.getElementById('add-event-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const name = document.getElementById('event-name').value;
+            const date = document.getElementById('event-date').value;
+            const vipPrice = parseFloat(document.getElementById('vip-price').value);
+            const regularPrice = parseFloat(document.getElementById('regular-price').value);
+            const maxAttendees = parseInt(document.getElementById('max-attendees').value);
+
+            const newEvent = { name, date, vipPrice, regularPrice, maxAttendees };
+
+            await fetch('http://localhost:3000/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newEvent)
+            });
+
+            renderEvents();
+            document.getElementById('add-event-form').reset();
+        });
+
+        document.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('edit-btn')) {
+                const id = event.target.getAttribute('data-id');
+                const response = await fetch(`http://localhost:3000/events/${id}`);
+                const eventData = await response.json();
+
+                if (eventData) {
+                    document.getElementById('event-name').value = eventData.name;
+                    document.getElementById('event-date').value = eventData.date;
+                    document.getElementById('vip-price').value = eventData.vipPrice;
+                    document.getElementById('regular-price').value = eventData.regularPrice;
+                    document.getElementById('max-attendees').value = eventData.maxAttendees;
+
+                    document.getElementById('add-event-form').onsubmit = async (e) => {
+                        e.preventDefault();
+                        const updatedEvent = {
+                            name: document.getElementById('event-name').value,
+                            date: document.getElementById('event-date').value,
+                            vipPrice: parseFloat(document.getElementById('vip-price').value),
+                            regularPrice: parseFloat(document.getElementById('regular-price').value),
+                            maxAttendees: parseInt(document.getElementById('max-attendees').value)
+                        };
+
+                        await fetch(`http://localhost:3000/events/${id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(updatedEvent)
+                        });
+
+                        renderEvents();
+                        document.getElementById('add-event-form').reset();
+                        document.getElementById('add-event-form').onsubmit = addEvent;
+                    };
+                }
+            } else if (event.target.classList.contains('delete-btn')) {
+                const id = event.target.getAttribute('data-id');
+                await fetch(`http://localhost:3000/events/${id}`, {
+                    method: 'DELETE'
+                });
+
+                renderEvents();
+            }
+        });
+
+        function addEvent(event) {
+            event.preventDefault();
+            const name = document.getElementById('event-name').value;
+            const date = document.getElementById('event-date').value;
+            const vipPrice = parseFloat(document.getElementById('vip-price').value);
+            const regularPrice = parseFloat(document.getElementById('regular-price').value);
+            const maxAttendees = parseInt(document.getElementById('max-attendees').value);
+
+            const newEvent = { name, date, vipPrice, regularPrice, maxAttendees };
+
+            fetch('http://localhost:3000/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newEvent)
+            }).then(renderEvents);
+
+            document.getElementById('add-event-form').reset();
+        }
+
+        document.getElementById('add-event-form').addEventListener('submit', addEvent);
+
+        renderEvents();
+    </script>
+</body>
+</html>

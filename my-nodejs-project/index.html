@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Booking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        #events {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Event Booking</h1>
+    </header>
+    <main>
+        <section id="event-list">
+            <h2>Available Events</h2>
+            <ul id="events">
+                <!-- Event items will be dynamically populated here -->
+            </ul>
+        </section>
+        <hr>
+        <section id="reservation-form">
+            <h2>Make a Reservation</h2>
+            <form id="reserve-form">
+                <div class="form-group">
+                    <label for="event-id">Select Event:</label>
+                    <select id="event-id" name="event-id" required>
+                        <!-- Event options will be dynamically populated here -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ticket-type">Ticket Type:</label>
+                    <select id="ticket-type" name="ticket-type" required>
+                        <option value="VIP">VIP</option>
+                        <option value="Regular">Regular</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-email">Email:</label>
+                    <input type="email" id="user-email" name="user-email" required>
+                </div>
+                <button type="submit">Reserve Tickets</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Ticket Booking System</p>
+    </footer>
+    <script>
+        async function fetchEvents() {
+            const response = await fetch('http://localhost:3000/events');
+            return await response.json();
+        }
+
+        async function renderEvents() {
+            const events = await fetchEvents();
+            const eventsList = document.getElementById('events');
+            const eventSelect = document.getElementById('event-id');
+            eventsList.innerHTML = '';
+            eventSelect.innerHTML = '';
+            events.forEach(event => {
+                const li = document.createElement('li');
+                li.textContent = `${event.name} - ${event.date}`;
+                eventsList.appendChild(li);
+
+                const option = document.createElement('option');
+                option.value = event._id;
+                option.textContent = `${event.name} - ${event.date}`;
+                eventSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById('reserve-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const eventId = document.getElementById('event-id').value;
+            const ticketType = document.getElementById('ticket-type').value;
+            const quantity = document.getElementById('quantity').value;
+            const userEmail = document.getElementById('user-email').value;
+
+            const reservation = { eventId, ticketType, quantity, userEmail };
+
+            const response = await fetch('http://localhost:3000/reserve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reservation)
+            });
+
+            if (response.ok) {
+                alert('Reservation successful');
+            } else {
+                alert('Failed to make reservation');
+            }
+        });
+
+        renderEvents();
+    </script>
+</body>
+</html>
